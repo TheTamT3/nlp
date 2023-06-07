@@ -72,14 +72,11 @@ class Trainer:
             # If 'mixed_precision_dtype' is None, use 'nullcontext', 
             self.ctx = nullcontext()
         else:
-            print("====mixed_precision_dtype=====",mixed_precision_dtype)
             # TODO Otherwise, use 'torch.amp.autocast' context with the specified dtype, and initialize GradScaler if mixed_precision_dtype is float16.
-            self.ctx = None ### YOUR CODE HERE ###
             self.ctx = torch.cuda.amp.autocast(dtype=mixed_precision_dtype)
             self.gradscaler = None ### YOUR CODE HERE ###
             if mixed_precision_dtype == torch.float16:
                 self.gradscaler = torch.cuda.amp.GradScaler()
-            
 
     def _set_ddp_training(self):
         # TODO: Initialize the DistributedDataParallel wrapper for the model. 
@@ -87,15 +84,15 @@ class Trainer:
         # and output device for the data parallelism.
         # num_gpus = torch.cuda.device_count()
         # device_ids = list(range(num_gpus))
-        device_ids = [self.gpu_id]
-        print("device_ids:", device_ids)
+        # device_ids = [self.gpu_id]
+        # print("device_ids:", device_ids)
+        print("gpu_id", self.gpu_id)
         self.model = nn.parallel.DistributedDataParallel(
             self.model,
-            device_ids=device_ids,
-            output_device=device_ids
+            device_ids=[self.gpu_id],
+            output_device=self.gpu_id
         )
-        print("ddp training")
-        
+
     def _run_batch(self, batch):
         """
         Run a single training batch.
@@ -376,9 +373,7 @@ if __name__ == "__main__":
         # Initialize the process group ### YOUR CODE HERE ###
         from torch.distributed import init_process_group, destroy_process_group
         init_process_group(backend=backend)
-        # Get the DDP rank
         local_rank = int(os.environ['LOCAL_RANK'])
-        print("local_rank--",local_rank)
 
     else:
         os.environ['RANK'] = '0'
